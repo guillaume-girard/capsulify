@@ -1,0 +1,105 @@
+/*
+ * ----------------------------------------------------------------------------
+ * "THE BEER-WARE LICENSE" (Revision 42):
+ * Guillaume G. wrote this file. As long as you retain this notice you
+ * can do whatever you want with this stuff. If we meet some day, and you think
+ * this stuff is worth it, you can buy me a beer in return 
+ * Guillaume G.
+ * ----------------------------------------------------------------------------
+ */
+
+@keyframes canvas-cursor-animation {
+  0% { width: 0px; height: 0px; opacity: 1; }
+  70%   { width: 20px; height: 20px; opacity: 0; }
+  100%   { width: 20px; height: 20px; opacity: 0; }
+}
+
+* {
+    box-sizing: border-box;
+    font-family: "Tahoma", "Calibri", "sans-serif";
+}
+body {
+    padding: 0;
+    margin: 0;
+}
+div.grid {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: stretch;
+}
+div.add-image-form {
+    width: 200px;
+    padding: 10px;
+    background-color: #EAEAEA;
+}
+input[type="file"] {
+    display: none;
+}
+input[type="file"] + label {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: lightblue;
+    color: gray;
+    text-align: center;
+    cursor: pointer;
+    transition: 
+        color .4s ease-out,
+        background-color .4s ease-out;
+}
+input[type="file"] + label:hover {
+    background-color: cadetblue;
+    color: whitesmoke;
+}
+div.add-image-form img {
+    display: block;
+    width: 100%;
+    margin-bottom: 5px;
+    box-shadow: 0px 2px 5px 1px rgba(0, 0, 0, .4);
+    background-color: whitesmoke;
+}
+div.add-image-form form {
+    display: none;
+}
+div.add-image-form form.show {
+    display: block;
+}
+div.canvas-wrapper {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+canvas {
+    border: 1px dashed gray;
+    cursor: crosshair;
+    max-height: 95%;
+    max-width: 95%;
+}
+.canvas-wrapper .cursor-animation {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 0px;
+    height: 0px;
+    border-radius: 50%;
+    border: 2px solid black;
+    opacity: 1;
+    background-color: transparent;
+    pointer-events: none;
+    animation: canvas-cursor-animation 1.4s ease-out 0s infinite;
+}
+canvas:hover + .cursor-animation {
+    display: inline-block;
+}
+div.console {
+    background-color: black;
+    color: whitesmoke;
+    font-family: "consolas";
+    width: 200px;
+}

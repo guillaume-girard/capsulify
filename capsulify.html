@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<!--
+------------------------------------------------------------------------------
+-- "THE BEER-WARE LICENSE" (Revision 42):
+-- Guillaume G. wrote this file. As long as you retain this notice you
+-- can do whatever you want with this stuff. If we meet some day, and you think
+-- this stuff is worth it, you can buy me a beer in return.
+-- Guillaume G.
+------------------------------------------------------------------------------
+-->
+<html lang="fr">
+    <head>
+        <title>Capsulify</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script type="text/javascript" src="./js/capsulify.js" defer></script>
+        <link rel="stylesheet" type="text/css" href="./styles/capsulify.css" />
+    </head>
+    <body>
+        <div class="grid">
+            <div class="add-image-form">
+                <img id="input-image-receiver" src="" alt="" />
+                <input id="input-image-file" name="imageFile" type="file" accept="image/*" />
+                <label for="input-image-file">Sélectionner une image</label>
+                <form id="form-capsulify" name="capsulify">
+                    <p><b>Arrière-plan :</b></p>
+                    <label for="bgWidth">Longueur : </label>
+                    <input id="bgWidth" type="number" name="bgWidth" />
+                    <label for="bgHeight">Hauteur : </label>
+                    <input id="bgHeight" type="number" name="bgHeight" />
+                    <label for="bgColor">Couleur : </label>
+                    <input id="bgColor" type="color" name="bgColor" value="#A4825B" />
+                    <p><b>Zone de travail :</b></p>
+                    <label for="workWidth">Longueur : </label>
+                    <input id="workWidth" type="number" name="workWidth" />
+                    <label for="workHeight">Hauteur : </label>
+                    <input id="workHeight" type="number" name="workHeight" />
+                    <label for="workOpacity">Opacité : </label>
+                    <input id="workOpacity" type="range" name="workOpacity" value="30" />
+                    <hr />
+                    <input type="submit" value="Capsulifier" />
+                </form>
+            </div>
+            <div class="canvas-wrapper">
+                <canvas id="canvas" height="300" width="300">
+                </canvas>
+                <!--<div id="cursor-animation" class="cursor-animation"></div>-->
+            </div>
+            <div class="console">
+                Console ----
+            </div>
+        </div>
+    </body>
+</html>
