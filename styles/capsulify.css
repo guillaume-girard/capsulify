@@ -97,9 +97,48 @@ canvas {
 canvas:hover + .cursor-animation {
     display: inline-block;
 }
-div.console {
+section.console-wrapper {
     background-color: black;
-    color: whitesmoke;
-    font-family: "consolas";
     width: 200px;
+    padding: 5px;
+    color: whitesmoke;
+    display: flex;
+    flex-direction: column;
+}
+section.console-wrapper h2 {
+    margin: 0;
+    color: black;
+    background-color: whitesmoke;
+    text-align: center;
+}
+div.console {
+    flex: 1;
+    word-break: break-all;
+    overflow: hidden;
+}
+div.console p, 
+div.console p span,
+section.console-wrapper h2 {
+    font-family: "consolas";
+    font-size: 12px;
+}
+div.console p {
+    margin: 0;
+}
+div.console p span {
+    color: whitesmoke;
+    font-weight: bold;
+    margin-right: 5px;
+}
+div.console .info {
+    color: lightblue;
+}
+div.console .success {
+    color: green;
+}
+div.console .warning {
+    color: orange;
+}
+div.console .error {
+    color: crimson;
 }

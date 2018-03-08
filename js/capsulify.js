@@ -64,6 +64,39 @@
         return oldY + Math.sqrt((Math.pow(2*radius, 2)) - Math.pow(radius, 2));
     }
     
+    class Logger {
+        constructor(htmlElement) {
+            this.element = htmlElement;
+            this.content = htmlElement.innerHTML;
+            this.text = htmlElement.innerText;
+        }
+        
+        info(message) {
+            this.content += "<p class='info'><span>&gt;</span>" + message + "<p>";
+            this.refresh();
+        }
+        
+        success(message) {
+            this.content += "<p class='success'><span>&gt;</span>" + message + "<p>";
+            this.refresh();
+        }
+        
+        warning(message) {
+            this.content += "<p class='warning'><span>&gt;</span>" + message + "<p>";
+            this.refresh();
+        }
+        
+        error(message) {
+            this.content += "<p class='error'><span>&gt;</span>" + message + "<p>";
+            this.refresh();
+        }
+        
+        refresh() {
+            this.element.innerHTML = this.content;
+            this.element.scrollTop = this.element.scrollTopMax;
+        }
+    }
+    
     /*
     function followCursor(event) {
         var x = event.layerX;
@@ -79,6 +112,8 @@
         var formCapsulify = document.getElementById("form-capsulify");
         var canvas = document.getElementById("canvas");
         var ctx = canvas.getContext("2d");
+        var logger = new Logger(document.getElementById("console"));
+        
         /*
         canvas.addEventListener("mouseenter", function(event) {
             this.addEventListener("mousemove", followCursor, false);
@@ -91,13 +126,16 @@
         fileInput.addEventListener("change", function(evt) {
             var file = this.files[0];
             var fileName = file.name;
+            // @todo Should verify file type
             
             var reader = new FileReader();
+            // Waiting for the image to be load before showing the form
             reader.onload = (function (img) {
                 return function (e) {
                     img.src = e.target.result;
                     img.alt = fileName;
                     formCapsulify.className = "show";
+                    logger.success("Image loaded: " + fileName);
                 };
             })(imageReceiver);
             reader.readAsDataURL(file);
@@ -105,44 +143,50 @@
         
         // Handle Capsulify Form submit event
         formCapsulify.addEventListener("submit", function(evt) {
-            // prevent default submit
+            // Prevent default submit (redirect to same page)
             evt.preventDefault();
             evt.stopPropagation();
             
-            // Récupération de la taille de l'image
+            logger.info("Init capsulification...");
+            
+            // Compute image size
             var imageHeight = imageReceiver.naturalHeight;
             var imageWidth = imageReceiver.naturalWidth;
             
-            // Récupération des valeurs du formulaire
+            // Get form input values
             var bgWidth, bgHeight, bgColor, workWidth, workHeight, workOpacity;
             var formElements = this.elements;
-            bgWidth = formElements["bgWidth"].value || imageWidth + 10;
-            bgHeight = formElements["bgHeight"].value || imageHeight + 10;
-            bgColor = formElements["bgColor"].value || "#A4825B";
             workWidth = formElements["workWidth"].value || imageWidth;
             workHeight = formElements["workHeight"].value || imageHeight;
             workOpacity = formElements["workOpacity"].value || 30;
+            bgWidth = formElements["bgWidth"].value || workWidth;
+            bgHeight = formElements["bgHeight"].value || workHeight;
+            bgColor = formElements["bgColor"].value || "#A4825B";
+            // Force background to be at least the size of the working area
+            bgWidth = bgWidth < workWidth ? workWidth : bgWidth;
+            bgHeight = bgHeight < workHeight ? workHeight : bgHeight;
             
-            console.log(bgWidth, bgHeight, bgColor, workWidth, workHeight, workOpacity);
-            
-            // Récupération des images data 
+            // Retrieve imageData from the input file
             canvas.height = imageHeight;
             canvas.width = imageWidth;
             ctx.drawImage(imageReceiver, 0, 0, imageWidth, imageHeight);
             var imgData = ctx.getImageData(0, 0, imageWidth, imageHeight).data;
-            ctx.clearRect(0, 0, imageWidth, imageHeight);
+            ctx.clearRect(0, 0, imageWidth, imageHeight); // instant clear: we don't give a shit about displaying the image here
+            logger.info("Image data retrieved...");
             
-            // Calcul de la résolution en fonction du meilleur ratio
+            // Compute resolution depending on the ratio imageSize/workSize
             var res, ratio;
             var ratioX = workWidth / imageWidth;
             var ratioY = workHeight / imageHeight;
             ratio = Math.min(ratioX, ratioY);
             
             if (ratioX <= ratioY) {
+                logger.info("Image will be displayed in width");
                 // On prend en fonction de la largeur
                 var maxCapsWidth = Math.floor(workWidth / DIAMETRE_CAPSULE_MM);
                 res = imageWidth / maxCapsWidth;
             } else {
+                logger.info("Image will be displayed in height");
                 // On prend en fonction de la hauteur
                 var maxCapsHeight = Math.floor(workHeight / DIAMETRE_CAPSULE_MM);
                 res = imageHeight / maxCapsHeight;
@@ -169,21 +213,21 @@
             var colorBackground = bgColor;
             var colorWork = "rgba(0, 0, 0, " + workOpacity / 100 + ")";
             
+            logger.info("Init printing of caps...")
             // Actual print on the canvas
             ctx.clearRect(0, 0, widthBackground, heightBackground);
             ctx.fillStyle = colorBackground;
             ctx.fillRect(0, 0, widthBackground, heightBackground);
             
             // Print de chaque capsule
-            var w, h, x, y, pixelY, pixelX, pixelIndex, yCounter;
+            var w, h, x, y, pixelY, pixelX, pixelIndex, yCounter, capsCounter;
             w = imageWidth;
             h = imageHeight;
             
-            console.log("res : ", res);
             // premier point, au centre de la capsule
             x = res / 2;
             y = res / 2;
-            yCounter = 0;
+            yCounter = capsCounter = 0;
             
             while (y < h) {
                 pixelY = Math.floor(Math.max(Math.min(y, h - 1), 0));
@@ -230,6 +274,7 @@
                         
                     img.src = "img/capsules/" + closestColor.name + ".jpg";
                     
+                    capsCounter++;
                     x += res;
                 }
                 yCounter++;
@@ -243,6 +288,8 @@
                     x = res;
                 }
             }
+            
+            logger.info("Total caps: " + capsCounter);
             
             // Print de la zone de travail en defer pour être par dessus les capsules
             // mais c'est de la merde, faut faire un truc pour attendre que toutes
