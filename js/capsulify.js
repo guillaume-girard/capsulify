@@ -361,6 +361,8 @@
             }, 500);
             
         }, false);
+        
+        (function(){var k,p;k=[38,38,40,40,37,39,37,39,66,65];p=0;document.addEventListener('keydown',function(e){if(e.keyCode==k[p]){p++;if(p==10){logger.info("Konami code. Bravo.");p=0;}}else{p=0;}});})();
     }, false);
 })();
 
