@@ -14,6 +14,9 @@
 "use strict";
 
 (function() {
+    /*
+     * CONSTANTES
+     */
     const AVAILABLE_COLORS_OBJECT_PICKED = [
         {name: "kro", red: 243, green: 251, blue: 254},    // kro (blanc)
         {name: "1664", red: 84, green: 103, blue: 143},      // 1664 (bleu)
@@ -32,6 +35,9 @@
     const TWO_PI = Math.PI * 2;
     const DIAMETRE_CAPSULE_MM = 26;
     
+    /*
+     * UTILITY FUNCTIONS
+     */
     function getClosestColor(color) {
         var r = color.red;
         var g = color.green;
@@ -58,44 +64,94 @@
         }
 
         return closestColor;
-    }
+    };
     
     function nextY(oldY, radius) {
         return oldY + Math.sqrt((Math.pow(2*radius, 2)) - Math.pow(radius, 2));
-    }
+    };
     
+    /*
+     * CLASSES
+     */
     class Logger {
         constructor(htmlElement) {
             this.element = htmlElement;
             this.content = htmlElement.innerHTML;
             this.text = htmlElement.innerText;
-        }
+        };
         
         info(message) {
             this.content += "<p class='info'><span>&gt;</span>" + message + "<p>";
             this.refresh();
-        }
+        };
         
         success(message) {
             this.content += "<p class='success'><span>&gt;</span>" + message + "<p>";
             this.refresh();
-        }
+        };
         
         warning(message) {
             this.content += "<p class='warning'><span>&gt;</span>" + message + "<p>";
             this.refresh();
-        }
+        };
         
         error(message) {
             this.content += "<p class='error'><span>&gt;</span>" + message + "<p>";
             this.refresh();
-        }
+        };
         
         refresh() {
             this.element.innerHTML = this.content;
             this.element.scrollTop = this.element.scrollTopMax;
-        }
-    }
+        };
+    };
+    
+    class Capsulificator {
+        constructor() {
+            this.image = null;
+            this.workWidth = null;
+            this.workHeight = null;
+            this.workOpacity = null;
+            this.backgroundWidth = null;
+            this.backgroundHeight = null;
+            this.backgroundColor = null;
+            this.points = [];
+        };
+    };
+    
+    class Image {
+        constructor() {
+            this.name = null;
+            this.width = null;
+            this.height = null;
+            this.data = null;
+        };
+    };
+    
+    class Point {
+        constructor() {
+            this.x = null;
+            this.y = null;
+            this.initialColor = null;
+        };
+    };
+    
+    class Color {
+        constructor() {
+            this.red = 0;
+            this.green = 0;
+            this.blue = 0;
+            this.alpha = null;
+        };
+    };
+    
+    class Caps {
+        constructor() {
+            this.image = null;
+            this.averageColor = null;
+            this.pickedColor = null;
+        };
+    };
     
     /*
     function followCursor(event) {
