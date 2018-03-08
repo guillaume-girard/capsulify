@@ -35,6 +35,15 @@
                     <input id="workHeight" type="number" name="workHeight" />
                     <label for="workOpacity">Opacité : </label>
                     <input id="workOpacity" type="range" name="workOpacity" value="30" />
+                    <p><b>Alignement des capsules :</b></p>
+                    <p>Droit :</p>
+                    <input id="caps-alignment-straight" type="radio" name="caps-alignment" value="straight" />
+                    <label for="caps-alignment-straight"></label>
+                    <p>En quinconce :</p>
+                    <input id="caps-alignment-row-quinconce" type="radio" name="caps-alignment" value="row-quinconce" checked="checked"/>
+                    <label for="caps-alignment-row-quinconce"></label>
+                    <input id="caps-alignment-col-quinconce" type="radio" name="caps-alignment" value="col-quinconce" />
+                    <label for="caps-alignment-col-quinconce"></label>
                     <hr />
                     <input type="submit" value="Capsulifier" />
                 </form>

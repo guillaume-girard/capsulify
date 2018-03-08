@@ -166,6 +166,11 @@
             bgWidth = bgWidth < workWidth ? workWidth : bgWidth;
             bgHeight = bgHeight < workHeight ? workHeight : bgHeight;
             
+            var capsAlignment = formElements["caps-alignment"].value;
+            if (capsAlignment !== "row-quinconce") {
+                logger.warning("\"" + capsAlignment + "\" alignment selected. Sorry but I don't give a damn. It will be row-quinconce. Fuck you.");
+            }
+            
             // Retrieve imageData from the input file
             canvas.height = imageHeight;
             canvas.width = imageWidth;
