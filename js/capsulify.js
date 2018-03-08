@@ -224,7 +224,7 @@
             
             var capsAlignment = formElements["caps-alignment"].value;
             if (capsAlignment !== "row-quinconce") {
-                logger.warning("\"" + capsAlignment + "\" alignment selected. Sorry but I don't give a damn. It will be row-quinconce. Fuck you.");
+                logger.warning("\"" + capsAlignment + "\" alignment selected. Sorry but I don't give a damn. It will be row-quinconce. Kiss you.");
             }
             
             // Retrieve imageData from the input file
