@@ -107,25 +107,62 @@
     };
     
     class Capsulificator {
-        constructor() {
-            this.image = null;
+        constructor(image) {
+            this.image = image;
             this.workWidth = null;
             this.workHeight = null;
             this.workOpacity = null;
             this.backgroundWidth = null;
             this.backgroundHeight = null;
             this.backgroundColor = null;
+            this.capsAlignment = null;
             this.points = [];
         };
+        
+        computeFormValues(formElements) {
+            this.workWidth = formElements["workWidth"].value || this.image.width;
+            this.workHeight = formElements["workHeight"].value || this.image.height;
+            this.workOpacity = formElements["workOpacity"].value || 30;
+            this.backgroundWidth = formElements["bgWidth"].value || this.workWidth;
+            this.backgroundHeight = formElements["bgHeight"].value || this.workHeight;
+            this.backgroundColor = Color.parseHexa(formElements["bgColor"].value) || Color.parseHexa("#A4825B");
+            // Force background to be at least the size of the working area
+            this.backgroundWidth = this.backgroundWidth < this.workWidth ? this.workWidth : this.backgroundWidth;
+            this.backgroundHeight = this.backgroundHeight < this.workHeight ? this.workHeight : this.backgroundHeight;
+
+            this.capsAlignment = formElements["caps-alignment"].value;
+            if (this.capsAlignment !== "row-quinconce") {
+                logger.warning("\"" + this.capsAlignment + "\" alignment selected. Sorry but I don't give a damn. It will be row-quinconce. Kiss you.");
+            }
+        }
     };
     
     class Image {
         constructor() {
+            this.image = null;
             this.name = null;
             this.width = null;
             this.height = null;
             this.data = null;
         };
+        
+        computeData(image) {
+            this.image = image;
+            this.width = image.naturalWidth;
+            this.height = image.naturalHeight;
+            
+            var canvas = document.createElement('canvas');
+            canvas.width = this.width;
+            canvas.height = this.height;
+            
+            var ctx = canvas.getContext("2d");
+            ctx.drawImage(this.image, 0, 0, this.width, this.height);
+            
+            this.data = ctx.getImageData(0, 0, this.width, this.height).data;
+            ctx.clearRect(0, 0, this.width, this.height);
+            
+            canvas.remove();
+        }
     };
     
     class Point {
@@ -137,12 +174,41 @@
     };
     
     class Color {
-        constructor() {
-            this.red = 0;
-            this.green = 0;
-            this.blue = 0;
-            this.alpha = null;
+        constructor(red, green, blue, alpha) {
+            this.red = red || 0;
+            this.green = green || 0;
+            this.blue = blue || 0;
+            this.alpha = alpha || 1;
         };
+        
+        get_rgb() {
+            return "rgb(" + 
+                    this.red + "," + 
+                    this.green + "," + 
+                    this.blue + 
+                    ")";
+        }
+        
+        get_rgba() {
+            return "rgba(" + 
+                    this.red + "," + 
+                    this.green + "," + 
+                    this.blue + "," + 
+                    this.alpha + 
+                    ")";
+        }
+        
+        static parseHexa(hexa) {
+            var cutted = hexa[0] === "#" ? hexa.slice(1) : hexa;
+            if (cutted.length !== 6) {
+                return null;
+            } else {
+                var red = parseInt(cutted.slice(0, 2), 16);
+                var green = parseInt(cutted.slice(2, 4), 16);
+                var blue = parseInt(cutted.slice(4, 6), 16);
+                return new Color(red, green, blue);
+            }
+        }
     };
     
     class Caps {
@@ -169,6 +235,8 @@
         var canvas = document.getElementById("canvas");
         var ctx = canvas.getContext("2d");
         var logger = new Logger(document.getElementById("console"));
+        var oImage = new Image();
+        var oCapsulificator = new Capsulificator(oImage);
         
         /*
         canvas.addEventListener("mouseenter", function(event) {
@@ -178,6 +246,12 @@
             this.removeEventListener("mousemove", followCursor, false);
         }, false);*/
         
+        // Handle load event on image
+        imageReceiver.addEventListener('load', function(evt) {
+            oImage.computeData(this);
+            formCapsulify.className = "show";
+        }, false);
+        
         // Handle event change on the file input
         fileInput.addEventListener("change", function(evt) {
             var file = this.files[0];
@@ -185,15 +259,11 @@
             // @todo Should verify file type
             
             var reader = new FileReader();
-            // Waiting for the image to be load before showing the form
-            reader.onload = (function (img) {
-                return function (e) {
-                    img.src = e.target.result;
-                    img.alt = fileName;
-                    formCapsulify.className = "show";
-                    logger.success("Image loaded: " + fileName);
-                };
-            })(imageReceiver);
+            // Waiting image data to be loaded before creating the image object
+            reader.addEventListener("load", function (evt) {
+                imageReceiver.src = evt.target.result;
+                imageReceiver.alt = fileName;
+            }, false);
             reader.readAsDataURL(file);
         }, false);
         
@@ -205,62 +275,35 @@
             
             logger.info("Init capsulification...");
             
-            // Compute image size
-            var imageHeight = imageReceiver.naturalHeight;
-            var imageWidth = imageReceiver.naturalWidth;
-            
             // Get form input values
-            var bgWidth, bgHeight, bgColor, workWidth, workHeight, workOpacity;
-            var formElements = this.elements;
-            workWidth = formElements["workWidth"].value || imageWidth;
-            workHeight = formElements["workHeight"].value || imageHeight;
-            workOpacity = formElements["workOpacity"].value || 30;
-            bgWidth = formElements["bgWidth"].value || workWidth;
-            bgHeight = formElements["bgHeight"].value || workHeight;
-            bgColor = formElements["bgColor"].value || "#A4825B";
-            // Force background to be at least the size of the working area
-            bgWidth = bgWidth < workWidth ? workWidth : bgWidth;
-            bgHeight = bgHeight < workHeight ? workHeight : bgHeight;
-            
-            var capsAlignment = formElements["caps-alignment"].value;
-            if (capsAlignment !== "row-quinconce") {
-                logger.warning("\"" + capsAlignment + "\" alignment selected. Sorry but I don't give a damn. It will be row-quinconce. Kiss you.");
-            }
-            
-            // Retrieve imageData from the input file
-            canvas.height = imageHeight;
-            canvas.width = imageWidth;
-            ctx.drawImage(imageReceiver, 0, 0, imageWidth, imageHeight);
-            var imgData = ctx.getImageData(0, 0, imageWidth, imageHeight).data;
-            ctx.clearRect(0, 0, imageWidth, imageHeight); // instant clear: we don't give a shit about displaying the image here
-            logger.info("Image data retrieved...");
+            oCapsulificator.computeFormValues(this.elements);
             
             // Compute resolution depending on the ratio imageSize/workSize
             var res, ratio;
-            var ratioX = workWidth / imageWidth;
-            var ratioY = workHeight / imageHeight;
+            var ratioX = oCapsulificator.workWidth / oImage.width;
+            var ratioY = oCapsulificator.workHeight / oImage.height;
             ratio = Math.min(ratioX, ratioY);
             
             if (ratioX <= ratioY) {
                 logger.info("Image will be displayed in width");
                 // On prend en fonction de la largeur
-                var maxCapsWidth = Math.floor(workWidth / DIAMETRE_CAPSULE_MM);
-                res = imageWidth / maxCapsWidth;
+                var maxCapsWidth = Math.floor(oCapsulificator.workWidth / DIAMETRE_CAPSULE_MM);
+                res = oImage.width / maxCapsWidth;
             } else {
                 logger.info("Image will be displayed in height");
                 // On prend en fonction de la hauteur
-                var maxCapsHeight = Math.floor(workHeight / DIAMETRE_CAPSULE_MM);
-                res = imageHeight / maxCapsHeight;
+                var maxCapsHeight = Math.floor(oCapsulificator.workHeight / DIAMETRE_CAPSULE_MM);
+                res = oImage.height / maxCapsHeight;
             }
     
-            var mmLeftWidth = workWidth % DIAMETRE_CAPSULE_MM;
+            var mmLeftWidth = oCapsulificator.workWidth % DIAMETRE_CAPSULE_MM;
             var mmLeftHeight = mmLeftWidth; // faire calcul en quinconce
             var decalX = (mmLeftWidth / DIAMETRE_CAPSULE_MM * res) / 2;
             var decalY = (mmLeftHeight / DIAMETRE_CAPSULE_MM * res) / 2;
             
             // Calcul des nouvelles dimensions avec zone de travail et arriere plan
-            var heightWork = workHeight / ratio;
-            var widthWork = workWidth / ratio;
+            var heightWork = oCapsulificator.workHeight / ratio;
+            var widthWork = oCapsulificator.workWidth / ratio;
             var heightBackground = heightWork + 70;
             var widthBackground = widthWork + 120;
             
@@ -270,20 +313,16 @@
             decalX += 50; // bullshit
             decalY += 30; // bullshit
             
-            // Couleur de la zone de travail et de l'arriere plan
-            var colorBackground = bgColor;
-            var colorWork = "rgba(0, 0, 0, " + workOpacity / 100 + ")";
-            
-            logger.info("Init printing of caps...")
+            logger.info("Init printing of caps...");
             // Actual print on the canvas
             ctx.clearRect(0, 0, widthBackground, heightBackground);
-            ctx.fillStyle = colorBackground;
+            ctx.fillStyle = oCapsulificator.backgroundColor.get_rgb();
             ctx.fillRect(0, 0, widthBackground, heightBackground);
             
             // Print de chaque capsule
             var w, h, x, y, pixelY, pixelX, pixelIndex, yCounter, capsCounter;
-            w = imageWidth;
-            h = imageHeight;
+            w = oImage.width;
+            h = oImage.height;
             
             // premier point, au centre de la capsule
             x = res / 2;
@@ -298,10 +337,10 @@
                     pixelX = Math.floor(Math.max(Math.min(x, w - 1), 0));
                     pixelIndex = (pixelX + pixelY * w) * 4;
                     
-                    var red = imgData[ pixelIndex + 0 ];
-                    var green = imgData[ pixelIndex + 1 ];
-                    var blue = imgData[ pixelIndex + 2 ];
-                    var alpha = imgData[ pixelIndex + 3 ] / 255; // useless
+                    var red = oImage.data[ pixelIndex + 0 ];
+                    var green = oImage.data[ pixelIndex + 1 ];
+                    var blue = oImage.data[ pixelIndex + 2 ];
+                    var alpha = oImage.data[ pixelIndex + 3 ] / 255; // useless
                     
                     var colorObj = {
                         red: red,
@@ -356,7 +395,7 @@
             // mais c'est de la merde, faut faire un truc pour attendre que toutes
             // les capsules soient print
             setTimeout(function() {
-                ctx.fillStyle = colorWork;
+                ctx.fillStyle = (new Color(0, 0, 0, oCapsulificator.workOpacity / 100)).get_rgba();
                 ctx.fillRect(50, 30, widthWork, heightWork);
             }, 500);
             
