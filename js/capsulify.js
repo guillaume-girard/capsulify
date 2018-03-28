@@ -35,6 +35,9 @@
     const TWO_PI = Math.PI * 2;
     const DIAMETRE_CAPSULE_MM = 26;
     
+    const RATIO_WIDTH = "This is the ratio in width. You know what's cool with that kind of const? you can put what the fuck you want in it, it will work :)";
+    const RATIO_HEIGHT = "Fucking awesome man";
+    
     /*
      * UTILITY FUNCTIONS
      */
@@ -68,6 +71,10 @@
     
     function nextY(oldY, radius) {
         return oldY + Math.sqrt((Math.pow(2*radius, 2)) - Math.pow(radius, 2));
+    };
+    
+    function nextQuinconce(oldValue) {
+        return oldValue + Math.sqrt((Math.pow(DIAMETRE_CAPSULE_MM, 2)) - Math.pow(DIAMETRE_CAPSULE_MM / 2, 2));
     };
     
     /*
@@ -119,21 +126,72 @@
             this.points = [];
         };
         
-        computeFormValues(formElements) {
-            this.workWidth = formElements["workWidth"].value || this.image.width;
-            this.workHeight = formElements["workHeight"].value || this.image.height;
-            this.workOpacity = formElements["workOpacity"].value || 30;
-            this.backgroundWidth = formElements["bgWidth"].value || this.workWidth;
-            this.backgroundHeight = formElements["bgHeight"].value || this.workHeight;
+        handleFormValues(formElements) {
+            this.workWidth = parseInt(formElements["workWidth"].value) || this.image.width;
+            this.workHeight = parseInt(formElements["workHeight"].value) || this.image.height;
+            this.workOpacity = parseInt(formElements["workOpacity"].value) || 30;
+            this.backgroundWidth = parseInt(formElements["bgWidth"].value) || this.workWidth;
+            this.backgroundHeight = parseInt(formElements["bgHeight"].value) || this.workHeight;
             this.backgroundColor = Color.parseHexa(formElements["bgColor"].value) || Color.parseHexa("#A4825B");
+            this.capsAlignment = formElements["caps-alignment"].value;
+            
             // Force background to be at least the size of the working area
             this.backgroundWidth = this.backgroundWidth < this.workWidth ? this.workWidth : this.backgroundWidth;
             this.backgroundHeight = this.backgroundHeight < this.workHeight ? this.workHeight : this.backgroundHeight;
-
-            this.capsAlignment = formElements["caps-alignment"].value;
-            if (this.capsAlignment !== "row-quinconce") {
-                logger.warning("\"" + this.capsAlignment + "\" alignment selected. Sorry but I don't give a damn. It will be row-quinconce. Kiss you.");
+        }
+        
+        // pérave
+        computeGaps() {
+            var workXGap = (this.backgroundWidth - this.workWidth) / 2;
+            var workYGap = (this.backgroundHeight - this.workHeight) / 2;
+            var xGap = workXGap;
+            var yGap = workYGap;
+            // Compute xGap
+            if (["row-quinconce", "straight"].indexOf(this.capsAlignment) !== -1) {
+                var maxCaps = Math.floor(this.workWidth / DIAMETRE_CAPSULE_MM);
+                var maxCapsMm = maxCaps * DIAMETRE_CAPSULE_MM;
+                // En quinconce on vérifie si on peut caler une capsule
+                // en plus sur les lignes impaires (demi-capsule en plus)
+                if (this.capsAlignment === "row-quinconce") {
+                    maxCapsMm += ((maxCapsMm + (DIAMETRE_CAPSULE_MM) / 2) < this.workWidth) ? (DIAMETRE_CAPSULE_MM) / 2 : 0;
+                }
+                xGap += (this.workWidth - maxCapsMm) / 2;
+            } else {
+                var mmCounter = 0;
+                var xWrapper = 0;
+                while((xWrapper + DIAMETRE_CAPSULE_MM) < this.workWidth) {
+                    mmCounter = xWrapper + DIAMETRE_CAPSULE_MM;
+                    xWrapper = nextY(xWrapper, DIAMETRE_CAPSULE_MM / 2);
+                }
+                
+                xGap += (this.workWidth - mmCounter) / 2;
             }
+            // Compute yGap
+            if (["col-quinconce", "straight"].indexOf(this.capsAlignment) !== -1) {
+                var maxCaps = Math.floor(this.workHeight / DIAMETRE_CAPSULE_MM);
+                var maxCapsMm = maxCaps * DIAMETRE_CAPSULE_MM;
+                // En quinconce on vérifie si on peut caler une capsule
+                // en plus sur les colonnes impaires (demi-capsule en plus)
+                if (this.capsAlignment === "col-quinconce") {
+                    maxCapsMm += ((maxCapsMm + (DIAMETRE_CAPSULE_MM) / 2) < this.workHeight) ? (DIAMETRE_CAPSULE_MM) / 2 : 0;
+                }
+                yGap += (this.workHeight - maxCapsMm) / 2;
+            } else {
+                var mmCounter = 0;
+                var yWrapper = 0;
+                while((yWrapper + DIAMETRE_CAPSULE_MM) < this.workHeight) {
+                    mmCounter = yWrapper + DIAMETRE_CAPSULE_MM;
+                    yWrapper = nextY(yWrapper, DIAMETRE_CAPSULE_MM / 2);
+                }
+                
+                yGap += (this.workHeight - mmCounter) / 2;
+            }
+            
+            return {"workXGap": workXGap, "workYGap": workYGap, "xGap": xGap, "yGap": yGap};
+        }
+        
+        retrieveImagePixelColor(pixelX, pixelY) {
+            return this.image.retrievePixelColor(pixelX, pixelY);
         }
     };
     
@@ -159,9 +217,21 @@
             ctx.drawImage(this.image, 0, 0, this.width, this.height);
             
             this.data = ctx.getImageData(0, 0, this.width, this.height).data;
-            ctx.clearRect(0, 0, this.width, this.height);
             
             canvas.remove();
+        }
+        
+        retrievePixelColor(pixelX, pixelY) {
+            pixelX = (Math.min(this.width, Math.round(pixelX))) - 1;
+            pixelY = (Math.min(this.height, Math.round(pixelY))) - 1;
+            var pixelIndex = (pixelX + pixelY * this.width) * 4;
+
+            var red = this.data[pixelIndex + 0];
+            var green = this.data[pixelIndex + 1];
+            var blue = this.data[pixelIndex + 2];
+            var alpha = this.data[pixelIndex + 3] / 255; // useless
+
+            return new Color(red, green, blue);
         }
     };
     
@@ -171,6 +241,10 @@
             this.y = null;
             this.initialColor = null;
         };
+        
+        static getNextPoint(oldPoint, limitWidth, limitHeight, alignment) {
+            // todo
+        }
     };
     
     class Color {
@@ -229,12 +303,13 @@
     }*/
 
     document.addEventListener("DOMContentLoaded", function(event) {
+        var logger = new Logger(document.getElementById("console"));
+        
         var fileInput = document.getElementById("input-image-file");
         var imageReceiver = document.getElementById("input-image-receiver");
         var formCapsulify = document.getElementById("form-capsulify");
         var canvas = document.getElementById("canvas");
         var ctx = canvas.getContext("2d");
-        var logger = new Logger(document.getElementById("console"));
         var oImage = new Image();
         var oCapsulificator = new Capsulificator(oImage);
         
@@ -276,116 +351,136 @@
             logger.info("Init capsulification...");
             
             // Get form input values
-            oCapsulificator.computeFormValues(this.elements);
+            oCapsulificator.handleFormValues(this.elements);
             
-            // Compute resolution depending on the ratio imageSize/workSize
-            var res, ratio;
-            var ratioX = oCapsulificator.workWidth / oImage.width;
-            var ratioY = oCapsulificator.workHeight / oImage.height;
-            ratio = Math.min(ratioX, ratioY);
+            var gaps = oCapsulificator.computeGaps();
+            console.log("Gaps: ", gaps);
             
-            if (ratioX <= ratioY) {
-                logger.info("Image will be displayed in width");
-                // On prend en fonction de la largeur
-                var maxCapsWidth = Math.floor(oCapsulificator.workWidth / DIAMETRE_CAPSULE_MM);
-                res = oImage.width / maxCapsWidth;
-            } else {
-                logger.info("Image will be displayed in height");
-                // On prend en fonction de la hauteur
-                var maxCapsHeight = Math.floor(oCapsulificator.workHeight / DIAMETRE_CAPSULE_MM);
-                res = oImage.height / maxCapsHeight;
-            }
-    
-            var mmLeftWidth = oCapsulificator.workWidth % DIAMETRE_CAPSULE_MM;
-            var mmLeftHeight = mmLeftWidth; // faire calcul en quinconce
-            var decalX = (mmLeftWidth / DIAMETRE_CAPSULE_MM * res) / 2;
-            var decalY = (mmLeftHeight / DIAMETRE_CAPSULE_MM * res) / 2;
+            // Les ratios vont servir à connaitre la position de l'image
+            // dans la zone de travail (centrée verticalement ou horizontalement)
+            // puis à trouver un point sur l'image en fonction de la capsule que
+            // l'on souhaite poser sur la zone de travail
+            var ratioWidth = oCapsulificator.workWidth / oCapsulificator.image.width;
+            var ratioHeight = oCapsulificator.workHeight / oCapsulificator.image.height;
+            // On prend le plus petit ratio et on définit l'orientation dudit ratio
+            var ratio = Math.min(ratioWidth, ratioHeight);
+            var ratioDirection = ratioWidth < ratioHeight ? RATIO_WIDTH : RATIO_HEIGHT;
             
-            // Calcul des nouvelles dimensions avec zone de travail et arriere plan
-            var heightWork = oCapsulificator.workHeight / ratio;
-            var widthWork = oCapsulificator.workWidth / ratio;
-            var heightBackground = heightWork + 70;
-            var widthBackground = widthWork + 120;
+            // L'image va donc avoir de nouvelle dimension en fonction de ce ratio:
+            var newImageSize = {
+                "width": oCapsulificator.image.width * ratio,
+                "height": oCapsulificator.image.height * ratio
+            };
+            // Maintenant on peut calculer les gaps sur les técô
+            var gapsRefacto = {
+                "x": Math.max(0, (oCapsulificator.workWidth - newImageSize.width) / 2),
+                "y": Math.max(0, (oCapsulificator.workHeight - newImageSize.height) / 2)
+            };
             
-            canvas.height = heightBackground;
-            canvas.width = widthBackground;
+            canvas.width = oCapsulificator.backgroundWidth;
+            canvas.height = oCapsulificator.backgroundHeight;
             
-            decalX += 50; // bullshit
-            decalY += 30; // bullshit
-            
-            logger.info("Init printing of caps...");
-            // Actual print on the canvas
-            ctx.clearRect(0, 0, widthBackground, heightBackground);
+            // Print the background
+            ctx.clearRect(0, 0, oCapsulificator.backgroundWidth, oCapsulificator.backgroundHeight);
             ctx.fillStyle = oCapsulificator.backgroundColor.get_rgb();
-            ctx.fillRect(0, 0, widthBackground, heightBackground);
+            ctx.fillRect(0, 0, oCapsulificator.backgroundWidth, oCapsulificator.backgroundHeight);
             
-            // Print de chaque capsule
-            var w, h, x, y, pixelY, pixelX, pixelIndex, yCounter, capsCounter;
-            w = oImage.width;
-            h = oImage.height;
-            
-            // premier point, au centre de la capsule
-            x = res / 2;
-            y = res / 2;
+            // Placement de la premiere capsule, en haut à gauche
+            var capsuleX, capsuleY, imagePixelToRetrieveX, imagePixelToRetrieveY, yCounter, capsCounter;
+            capsuleX = capsuleY = DIAMETRE_CAPSULE_MM / 2;
             yCounter = capsCounter = 0;
             
-            while (y < h) {
-                pixelY = Math.floor(Math.max(Math.min(y, h - 1), 0));
-                
-                while (x + res / 2 < w) {
-                    // On retrouve la couleur du pixel courant
-                    pixelX = Math.floor(Math.max(Math.min(x, w - 1), 0));
-                    pixelIndex = (pixelX + pixelY * w) * 4;
+            while ((capsuleY + (DIAMETRE_CAPSULE_MM / 2)) < oCapsulificator.workHeight) {
+                while ((capsuleX + (DIAMETRE_CAPSULE_MM / 2)) < oCapsulificator.workWidth) {
+                    // On détermine quelle est la couleur de la capsule
+                    if (ratioDirection === RATIO_WIDTH) {
+                        // le x est forcément sur l'image
+                        imagePixelToRetrieveX = capsuleX / ratio;
+                        if (capsuleY >= gapsRefacto.y && capsuleY <= (oCapsulificator.workHeight - gapsRefacto.y)) {
+                            // Le x est bien dans l'image, on fait le ratio
+                            imagePixelToRetrieveY = (capsuleY - gapsRefacto.y) / ratio;
+                        } else {
+                            // si le point n'est pas sur l'image, on prend celui qui est au bord le plus proche
+                            if (capsuleY < gapsRefacto.y) {
+                                // bord gauche
+                                imagePixelToRetrieveY = 1;
+                            } else {
+                                // bord droit
+                                imagePixelToRetrieveY = oCapsulificator.image.height;
+                            }
+                        }
+                    }
+                    if (ratioDirection === RATIO_HEIGHT) {
+                        // le y est forcément sur l'image
+                        imagePixelToRetrieveY = capsuleY / ratio;
+                        // est-ce que le x est sur l'image ?
+                        if (capsuleX >= gapsRefacto.x && capsuleX <= (oCapsulificator.workWidth - gapsRefacto.x)) {
+                            // Le x est bien dans l'image, on fait le ratio
+                            imagePixelToRetrieveX = (capsuleX - gapsRefacto.x) / ratio;
+                        } else {
+                            // si le point n'est pas sur l'image, on prend celui qui est au bord le plus proche
+                             if (capsuleX < gapsRefacto.x) {
+                                // bord gauche
+                                imagePixelToRetrieveX = 1;
+                            } else {
+                                // bord droit
+                                imagePixelToRetrieveX = oCapsulificator.image.width;
+                            }
+                        }
+                    }
                     
-                    var red = oImage.data[ pixelIndex + 0 ];
-                    var green = oImage.data[ pixelIndex + 1 ];
-                    var blue = oImage.data[ pixelIndex + 2 ];
-                    var alpha = oImage.data[ pixelIndex + 3 ] / 255; // useless
-                    
-                    var colorObj = {
-                        red: red,
-                        green: green,
-                        blue: blue
-                    };
-                    
-                    var closestColor = getClosestColor(colorObj);
+                    var pixelColor = oCapsulificator.retrieveImagePixelColor(imagePixelToRetrieveX, imagePixelToRetrieveY);
+                    var closestColor = getClosestColor(pixelColor);
                     var img = document.createElement("img");
                     img.alt = closestColor.name;
 
-                    var centerX = x + decalX;
-                    var centerY = y + decalY;
-
                     var bindObject = {
                         img: img,
-                        radius: res / 2,
-                        centerX: centerX,
-                        centerY: centerY,
-                        imageX: centerX - res / 2,
-                        imageY: centerY- res / 2
+                        radius: DIAMETRE_CAPSULE_MM / 2,
+                        centerX: capsuleX + gaps.xGap,
+                        centerY: capsuleY + gaps.yGap,
+                        imageX: capsuleX + gaps.xGap - DIAMETRE_CAPSULE_MM / 2,
+                        imageY: capsuleY + gaps.yGap - DIAMETRE_CAPSULE_MM / 2
                     };
                     img.addEventListener("load", function() {
                         ctx.save();
                         ctx.beginPath(); // si on met pas ça ça fait des trucs chelous au moment du clip()
                             ctx.arc(this.centerX, this.centerY, this.radius, 0, TWO_PI, true);
                             ctx.clip();
-                            ctx.drawImage(this.img, this.imageX, this.imageY, res, res);
+                            ctx.drawImage(this.img, this.imageX, this.imageY, DIAMETRE_CAPSULE_MM, DIAMETRE_CAPSULE_MM);
                         ctx.restore();
                     }.bind(bindObject), false);
                         
                     img.src = "img/capsules/" + closestColor.name + ".jpg";
                     
                     capsCounter++;
-                    x += res;
+                    
+                    // Capsule suivante
+                    switch (oCapsulificator.capsAlignment) {
+                        case "col-quinconce":
+                        case "straight":
+                        case "row-quinconce":
+                        default:
+                            capsuleX += DIAMETRE_CAPSULE_MM;
+                            break;
+                    }
                 }
                 yCounter++;
                 
-                y = nextY(y, res / 2);
-                if (yCounter % 2 === 0) {
-                    // Ligne paire
-                    x = res / 2;
-                } else {
-                    // Ligne impaire, on décale
-                    x = res;
+                switch (oCapsulificator.capsAlignment) {
+                    case "straight":
+                    case "col-quinconce":
+                    case "row-quinconce":
+                    default:
+                        capsuleY = nextQuinconce(capsuleY);
+                        if (yCounter % 2 === 0) {
+                            // Ligne paire
+                            capsuleX = DIAMETRE_CAPSULE_MM / 2;
+                        } else {
+                            // Ligne impaire, on décale
+                            capsuleX = DIAMETRE_CAPSULE_MM;
+                        }
+                        break;
                 }
             }
             
@@ -396,7 +491,7 @@
             // les capsules soient print
             setTimeout(function() {
                 ctx.fillStyle = (new Color(0, 0, 0, oCapsulificator.workOpacity / 100)).get_rgba();
-                ctx.fillRect(50, 30, widthWork, heightWork);
+                ctx.fillRect(gaps.workXGap, gaps.workYGap, oCapsulificator.workWidth, oCapsulificator.workHeight);
             }, 500);
             
         }, false);
